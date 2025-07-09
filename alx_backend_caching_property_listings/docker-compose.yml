@@ -1,0 +1,47 @@
+version: '3.9'
+
+networks:
+  backend:
+services: # containers
+  db: # i want a container called db to run my database image
+    image: postgres:latest
+    # container_name: postgres_db
+    environment: # when the container starts, set up a DB, user, and password"
+      POSTGRES_DB: property_listing
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: test_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - backend
+  
+  redis: # i want a container called redis to run my redis image
+    image: redis:latest
+    container_name: redis_cache
+    ports:
+      - "127.0.0.1:6379:6379"
+    networks:
+      - backend
+  
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000      
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DJANGO_DB_HOST=db
+      - DJANGO_DB_NAME=property_listing
+      - DJANGO_DB_USER=myuser
+      - DJANGO_DB_PASSWORD=test_password
+      - REDIS_HOST=redis
+    networks:
+      - backend
+    depends_on:
+      - db
+      - redis
+volumes:
+  pgdata:
